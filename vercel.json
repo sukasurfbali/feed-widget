@@ -1,0 +1,25 @@
+{
+  "version": 2,
+  "outputDirectory": "public",
+  "functions": {
+    "api/notion.js": { "memory": 128, "maxDuration": 10 },
+    "api/storage.js": { "memory": 128, "maxDuration": 10 }
+  },
+  "routes": [
+    { "src": "/api/notion", "dest": "/api/notion.js" },
+    { "src": "/api/storage", "dest": "/api/storage.js" },
+    { "src": "/(.*)", "dest": "/$1" }
+  ],
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        { "key": "X-Frame-Options", "value": "ALLOWALL" },
+        { "key": "Content-Security-Policy", "value": "frame-ancestors *" },
+        { "key": "Access-Control-Allow-Origin", "value": "*" },
+        { "key": "Access-Control-Allow-Methods", "value": "GET, POST, OPTIONS" },
+        { "key": "Access-Control-Allow-Headers", "value": "Content-Type" }
+      ]
+    }
+  ]
+}
