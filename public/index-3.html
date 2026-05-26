@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IG Feed Mock-Up</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--dark:#2C2C2C;--muted:#D2D4D7;--bg:#ffffff;--border:#e8e8e8;--gap:3px}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--dark);padding:14px;max-width:600px;margin:0 auto}
+.toolbar{display:flex;align-items:center;justify-content:center;margin-bottom:14px;gap:8px;position:relative}
+.btn-refresh{display:inline-flex;align-items:center;gap:6px;background:var(--dark);color:#fff;border:none;border-radius:999px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;padding:8px 20px;cursor:pointer;transition:opacity 0.15s;white-space:nowrap}
+.btn-refresh:hover{opacity:0.82}
+.btn-refresh:disabled{opacity:0.5;cursor:not-allowed}
+.btn-refresh svg{width:14px;height:14px;flex-shrink:0}
+.save-indicator{position:absolute;right:0;font-size:10px;color:#8A8A8A;display:flex;align-items:center;gap:3px;opacity:0;transition:opacity 0.3s}
+.save-indicator svg{width:9px;height:9px}
+.tabs{display:flex;align-items:center;justify-content:center;gap:40px;margin-bottom:12px}
+.tab-btn{background:none;border:none;cursor:pointer;padding:4px;display:flex;align-items:center;justify-content:center;transition:color 0.15s}
+.tab-btn svg{width:24px;height:24px;display:block}
+.tab-btn.active{color:var(--dark)}
+.tab-btn.inactive{color:var(--muted)}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--gap);background:var(--border)}
+.cell{position:relative;aspect-ratio:4/5;background:#efefef;overflow:hidden;cursor:grab;user-select:none}
+.cell:active{cursor:grabbing}
+.cell.drag-over{outline:2px solid var(--dark);outline-offset:-2px;z-index:10}
+.cell.dragging{opacity:0.3}
+.cell img,.cell video{width:100%;height:100%;object-fit:cover;display:block;pointer-events:none}
+.cell-type{position:absolute;top:6px;right:6px;pointer-events:none;z-index:3}
+.cell-type svg{width:16px;height:16px;filter:drop-shadow(0 1px 2px rgba(0,0,0,0.4))}
+.cell-overlay{position:absolute;inset:0;background:transparent;display:flex;align-items:flex-end;justify-content:flex-end;padding:6px;gap:4px;transition:background 0.15s;z-index:5}
+.cell:hover .cell-overlay{background:rgba(0,0,0,0.15)}
+.cell-btn{width:24px;height:24px;border-radius:50%;border:none;background:rgba(0,0,0,0.5);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity 0.15s}
+.cell-btn svg{width:11px;height:11px}
+.cell:hover .cell-btn{opacity:1}
+.cell-btn:hover{background:rgba(0,0,0,0.8)}
+.carousel-arrow{position:absolute;top:50%;transform:translateY(-50%);width:24px;height:24px;border-radius:50%;background:rgba(255,255,255,0.88);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:6;opacity:0;transition:opacity 0.15s}
+.carousel-arrow svg{width:12px;height:12px;color:#222}
+.cell:hover .carousel-arrow{opacity:1}
+.carousel-arrow.left{left:5px}
+.carousel-arrow.right{right:5px}
+.carousel-arrow:disabled{opacity:0!important}
+.carousel-dots{position:absolute;bottom:6px;left:50%;transform:translateX(-50%);display:flex;gap:3px;z-index:6}
+.dot{width:5px;height:5px;border-radius:50%;background:rgba(255,255,255,0.5)}
+.dot.active{background:#fff}
+.cell-empty{width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;color:#c7c7c7}
+.cell-empty svg{width:20px;height:20px}
+.cell-empty span{font-size:9px;font-weight:500}
+.bottom-bar{display:flex;align-items:center;justify-content:flex-end;margin-top:8px}
+.setup-toggle{background:none;border:none;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:11px;font-weight:500;color:var(--dark);display:flex;align-items:center;gap:4px;padding:4px 0;opacity:0.45;transition:opacity 0.15s}
+.setup-toggle:hover{opacity:1}
+.setup-toggle svg{width:13px;height:13px}
+.setup-panel{display:none;background:#fff;border:1px solid var(--border);border-radius:14px;padding:18px;margin-top:10px}
+.setup-panel.open{display:block}
+.setup-panel h3{font-size:13px;font-weight:600;margin-bottom:14px}
+.field{margin-bottom:10px}
+.field label{display:block;font-size:10px;font-weight:500;color:#999;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px}
+.field input{width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:8px;font-family:'DM Sans',sans-serif;font-size:12px;background:#fafafa;color:var(--dark);transition:border-color 0.15s;outline:none}
+.field input:focus{border-color:var(--dark)}
+.field input::placeholder{color:#ccc}
+.setup-note{font-size:11px;color:#888;line-height:1.6;background:#f7f7f7;border-radius:8px;padding:10px 12px;margin:12px 0}
+.setup-note strong{color:var(--dark)}
+.setup-actions{display:flex;gap:8px;margin-top:14px}
+.btn-save{display:inline-flex;align-items:center;gap:6px;background:var(--dark);color:#fff;border:none;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:500;padding:8px 16px;cursor:pointer;transition:opacity 0.15s}
+.btn-save:hover{opacity:0.85}
+.btn-cancel{display:inline-flex;align-items:center;background:none;color:#999;border:1px solid var(--border);border-radius:8px;font-family:'DM Sans',sans-serif;font-size:12px;padding:8px 16px;cursor:pointer}
+.spinner{width:13px;height:13px;border-radius:50%;border:2px solid rgba(255,255,255,0.3);border-top-color:#fff;animation:spin 0.6s linear infinite;display:none;flex-shrink:0}
+.spinner.active{display:block}
+@keyframes spin{to{transform:rotate(360deg)}}
+.cell-shimmer{background:linear-gradient(90deg,#f0f0f0 25%,#e0e0e0 50%,#f0f0f0 75%);background-size:200% 100%;animation:shimmer 1.4s infinite}
+@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+.empty-msg{grid-column:1/-1;padding:48px 20px;text-align:center;font-size:12px;color:#ccc;background:#fafafa}
+.toast{position:fixed;bottom:16px;left:50%;transform:translateX(-50%) translateY(60px);background:var(--dark);color:#fff;font-size:12px;font-weight:500;padding:8px 16px;border-radius:20px;transition:transform 0.25s ease;z-index:100;white-space:nowrap;pointer-events:none}
+.toast.show{transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+
+<div class="toolbar">
+  <button class="btn-refresh" id="refreshBtn" onclick="fetchFromNotion()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+    Refresh
+    <div class="spinner" id="refreshSpinner"></div>
+  </button>
+  <div class="save-indicator" id="saveIndicator">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+    <span id="saveText">Saved</span>
+  </div>
+</div>
+
+<div class="tabs">
+  <button class="tab-btn active" id="tabAll" onclick="setTab('all')" title="All posts">
+    <svg viewBox="0 0 24 24" fill="currentColor"><rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="3" width="8" height="8" rx="1.5"/><rect x="3" y="13" width="8" height="8" rx="1.5"/><rect x="13" y="13" width="8" height="8" rx="1.5"/></svg>
+  </button>
+  <button class="tab-btn inactive" id="tabReels" onclick="setTab('reels')" title="Reels only">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2.5" y="2.5" width="19" height="19" rx="5"/><polygon points="9.5,7.5 17,12 9.5,16.5" fill="currentColor" stroke="none"/></svg>
+  </button>
+</div>
+
+<div class="grid" id="grid"></div>
+
+<div class="bottom-bar">
+  <button class="setup-toggle" onclick="toggleSetup()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+    Notion setup
+  </button>
+</div>
+
+<div class="setup-panel" id="setupPanel">
+  <h3>Connect your Notion database</h3>
+  <div class="field"><label>Integration token</label><input type="password" id="notionToken" placeholder="ntn_xxxxxxxxxxxxxxxxxxxx"/></div>
+  <div class="field"><label>Database ID</label><input type="text" id="notionDbId" placeholder="32-character ID from your database URL"/></div>
+  <div class="field"><label>Cover image property name</label><input type="text" id="imgProp" value="Cover"/></div>
+  <div class="field"><label>Date property name</label><input type="text" id="dateProp" value="Date"/></div>
+  <div class="field"><label>Format property name</label><input type="text" id="formatProp" value="Format"/></div>
+  <div class="field"><label>Show in grid property name</label><input type="text" id="showProp" value="Show in grid"/></div>
+  <div class="setup-note">Add a <strong>Checkbox</strong> property named <strong>"Show in grid"</strong> to your database. Checked = visible. After changes in Notion click <strong>Refresh</strong>.</div>
+  <div class="setup-actions">
+    <button class="btn-save" onclick="saveAndFetch()">Save & connect</button>
+    <button class="btn-cancel" onclick="toggleSetup()">Cancel</button>
+  </div>
+</div>
+
+<div id="embedUrlBox" style="display:none;background:#f7f7f7;border:1px solid #e8e8e8;border-radius:10px;padding:12px;margin-top:10px">
+  <div style="font-size:10px;font-weight:500;color:#999;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px">Your permanent embed URL — copy this into Notion</div>
+  <div style="display:flex;gap:6px;align-items:center">
+    <input id="embedUrl" type="text" readonly style="flex:1;padding:7px 10px;border:1px solid #e8e8e8;border-radius:7px;font-size:11px;color:#2C2C2C;background:#fff;outline:none;font-family:'DM Sans',sans-serif">
+    <button onclick="copyEmbedUrl()" style="background:#2C2C2C;color:#fff;border:none;border-radius:7px;padding:7px 12px;font-family:'DM Sans',sans-serif;font-size:11px;font-weight:500;cursor:pointer;white-space:nowrap">Copy</button>
+  </div>
+  <div style="font-size:10px;color:#aaa;margin-top:5px">Paste this URL into Notion as an embed. It will never reset.</div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+// All API calls go through same-domain Vercel functions — no cross-origin issues
+const API = {
+  notion: '/api/notion',
+  storage: '/api/storage'
+};
+
+const TOTAL = 15;
+let allCells = [];
+let activeTab = 'all';
+let dragFrom = null;
+let config = null;
+let saveTimer = null;
+
+// ── Config stored in URL — no server storage needed ──
+function saveConfigToUrl(cfg) {
+  // Use simple hex encoding to avoid any special characters that Notion might strip
+  const encoded = {
+    token: encodeHex(cfg.token || ''),
+    db: cfg.dbId || '',
+    img: cfg.imgProp || 'Cover',
+    date: cfg.dateProp || 'Date',
+    fmt: cfg.formatProp || 'Format',
+    show: encodeHex(cfg.showProp || 'Show in grid')
+  };
+  const base = window.location.origin + window.location.pathname;
+  const params = new URLSearchParams(encoded);
+  const fullUrl = base + '?' + params.toString();
+  window.history.replaceState({}, '', fullUrl);
+  showEmbedUrl(fullUrl);
+}
+
+function encodeHex(str) {
+  return Array.from(new TextEncoder().encode(str))
+    .map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+function decodeHex(hex) {
+  if (!hex) return '';
+  try {
+    const bytes = hex.match(/.{1,2}/g).map(b => parseInt(b, 16));
+    return new TextDecoder().decode(new Uint8Array(bytes));
+  } catch(e) { return ''; }
+}
+
+function loadConfigFromUrl() {
+  const params = new URLSearchParams(window.location.search);
+  if (!params.get('db')) return null;
+  return {
+    token: decodeHex(params.get('nk') || ''),
+    dbId: params.get('db') || '',
+    imgProp: params.get('img') || 'Cover',
+    dateProp: params.get('date') || 'Date',
+    formatProp: params.get('fmt') || 'Format',
+    showProp: decodeHex(params.get('show') || ''),
+  };
+}
+
+function showEmbedUrl(url) {
+  const box = document.getElementById('embedUrlBox');
+  const input = document.getElementById('embedUrl');
+  if (box && input) {
+    input.value = url;
+    box.style.display = 'block';
+  }
+}
+
+// ── Icons ──
+function reelIconSVG(){return`<svg viewBox="0 0 24 24" fill="white"><rect x="2" y="2" width="20" height="20" rx="5"/><polygon points="10,7.5 17,12 10,16.5" fill="#2C2C2C" stroke="none"/></svg>`;}
+function carouselIconSVG(){return`<svg viewBox="0 0 24 24" fill="white"><rect x="2" y="4" width="14" height="14" rx="2"/><rect x="18" y="6" width="3" height="10" rx="1"/><path d="M17 9l3 3-3 3" stroke="white" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg>`;}
+
+// ── Init ──
+async function init() {
+  buyerId = getBuyerId();
+  
+  // Try loading up to 3 times with delay — Notion iframe can be slow to allow requests
+  let saved = null;
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    saved = await storageLoad(`feed:${buyerId}`);
+    if (saved && saved.config) break;
+    if (attempt < 3) await new Promise(r => setTimeout(r, 800 * attempt));
+  }
+  
+  if (saved && saved.config) {
+    config = saved.config;
+    document.getElementById('notionToken').value = config.token || '';
+    document.getElementById('notionDbId').value = config.dbId || '';
+    document.getElementById('imgProp').value = config.imgProp || 'Cover';
+    document.getElementById('dateProp').value = config.dateProp || 'Date';
+    document.getElementById('formatProp').value = config.formatProp || 'Format';
+    document.getElementById('showProp').value = config.showProp || 'Show in grid';
+  }
+  renderShimmer();
+  if (config && config.token && config.dbId) {
+    await fetchFromNotion();
+  } else {
+    render();
+  }
+}
+
+// ── Save ──
+function triggerSave() {
+  // Config is in URL — no need to save anything
+  // Just show saved indicator
+  showSaved();
+}
+
+function showSaving() {
+  const ind = document.getElementById('saveIndicator');
+  const txt = document.getElementById('saveText');
+  if (ind) { ind.style.opacity = '1'; ind.style.color = '#8A8A8A'; }
+  if (txt) txt.textContent = 'Saving...';
+}
+function showSaved() {
+  const ind = document.getElementById('saveIndicator');
+  const txt = document.getElementById('saveText');
+  if (ind) { ind.style.opacity = '1'; ind.style.color = '#3D9970'; }
+  if (txt) txt.textContent = 'Saved';
+  setTimeout(() => { if (ind) ind.style.opacity = '0'; }, 2000);
+}
+
+// ── Setup ──
+function toggleSetup() { document.getElementById('setupPanel').classList.toggle('open'); }
+
+function saveAndFetch() {
+  config = {
+    token: document.getElementById('notionToken').value.trim(),
+    dbId: document.getElementById('notionDbId').value.trim(),
+    imgProp: document.getElementById('imgProp').value.trim() || 'Cover',
+    dateProp: document.getElementById('dateProp').value.trim() || 'Date',
+    formatProp: document.getElementById('formatProp').value.trim() || 'Format',
+    showProp: document.getElementById('showProp').value.trim() || 'Show in grid',
+  };
+  saveConfigToUrl(config);
+  document.getElementById('setupPanel').classList.remove('open');
+  fetchFromNotion();
+}
+
+// ── Tab ──
+function setTab(tab) {
+  activeTab = tab;
+  document.getElementById('tabAll').className = 'tab-btn ' + (tab === 'all' ? 'active' : 'inactive');
+  document.getElementById('tabReels').className = 'tab-btn ' + (tab === 'reels' ? 'active' : 'inactive');
+  render();
+}
+
+// ── Notion fetch via same-domain Vercel proxy ──
+async function fetchFromNotion() {
+  if (!config || !config.token || !config.dbId) {
+    document.getElementById('setupPanel').classList.add('open');
+    return;
+  }
+  const btn = document.getElementById('refreshBtn');
+  const spinner = document.getElementById('refreshSpinner');
+  btn.disabled = true; spinner.classList.add('active');
+  try {
+    const res = await fetch(API.notion, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        notionPath: `/v1/databases/${config.dbId}/query`,
+        token: config.token,
+        body: { sorts: [{ property: config.dateProp, direction: 'descending' }], page_size: 100 }
+      })
+    });
+    const data = await res.json();
+    if (data.error) throw new Error(data.message || data.error);
+    parseResults(data.results || []);
+    triggerSave();
+    showToast('Grid updated');
+  } catch(e) {
+    showToast('Error: ' + e.message);
+    render();
+  } finally {
+    btn.disabled = false; spinner.classList.remove('active');
+  }
+}
+
+function parseResults(results) {
+  const parsed = [];
+  results.forEach(page => {
+    const props = page.properties;
+    const imgProp = props[config.imgProp];
+    const formatProp = props[config.formatProp];
+    const showProp = props[config.showProp];
+    const dateProp = props[config.dateProp];
+    if (showProp && showProp.type === 'checkbox' && showProp.checkbox === false) return;
+    const titleKey = Object.keys(props).find(k => props[k].type === 'title');
+    const title = titleKey ? (props[titleKey].title || []).map(t => t.plain_text).join('') : '';
+    let type = 'post';
+    if (formatProp?.select?.name) {
+      const fmt = formatProp.select.name.toLowerCase();
+      if (fmt.includes('reel') || fmt.includes('video')) type = 'reel';
+      else if (fmt.includes('carousel')) type = 'carousel';
+    }
+    let slides = [], src = null;
+    if (imgProp?.files?.length) { slides = imgProp.files.map(f => f.file?.url || f.external?.url).filter(Boolean); src = slides[0] || null; }
+    if (!src && page.cover) { src = page.cover.file?.url || page.cover.external?.url || null; if (src) slides = [src]; }
+    let date = ''; if (dateProp?.date?.start) date = dateProp.date.start;
+    if (src) parsed.push({ src, type, slides, slideIndex: 0, title, notionId: page.id, date });
+  });
+  allCells = parsed;
+  render();
+}
+
+function renderShimmer() {
+  const grid = document.getElementById('grid'); grid.innerHTML = '';
+  for (let i = 0; i < 15; i++) { const d = document.createElement('div'); d.className = 'cell cell-shimmer'; grid.appendChild(d); }
+}
+
+function render() {
+  const grid = document.getElementById('grid'); grid.innerHTML = '';
+  let visible = activeTab === 'reels' ? allCells.filter(c => c.type === 'reel') : allCells;
+  visible = visible.slice(0, TOTAL);
+  if (!visible.length) {
+    const msg = document.createElement('div'); msg.className = 'empty-msg';
+    msg.textContent = config ? 'Click Refresh to load posts' : 'Open Notion setup to get started';
+    grid.appendChild(msg); return;
+  }
+  visible.forEach((c, i) => {
+    const div = document.createElement('div'); div.className = 'cell'; div.draggable = true;
+    const isVideoSrc = c.src && (c.src.includes('.mp4') || c.src.includes('.mov') || c.src.includes('.webm'));
+    if (isVideoSrc) {
+      const vid = document.createElement('video'); vid.src = c.src; vid.muted = true; vid.loop = true; vid.playsInline = true;
+      div.addEventListener('mouseenter', () => vid.play().catch(() => {}));
+      div.addEventListener('mouseleave', () => { vid.pause(); vid.currentTime = 0; });
+      div.appendChild(vid);
+    } else { const img = document.createElement('img'); img.src = c.src; img.alt = ''; div.appendChild(img); }
+    if (c.type === 'reel' || c.type === 'carousel') {
+      const typeEl = document.createElement('div'); typeEl.className = 'cell-type';
+      typeEl.innerHTML = c.type === 'reel' ? reelIconSVG() : carouselIconSVG(); div.appendChild(typeEl);
+    }
+    if (c.type === 'carousel' && c.slides.length > 1) {
+      const la = document.createElement('button'); la.className = 'carousel-arrow left';
+      la.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>`;
+      la.disabled = c.slideIndex === 0;
+      la.onclick = e => { e.stopPropagation(); c.slideIndex = Math.max(0, c.slideIndex - 1); c.src = c.slides[c.slideIndex]; render(); };
+      div.appendChild(la);
+      const ra = document.createElement('button'); ra.className = 'carousel-arrow right';
+      ra.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>`;
+      ra.disabled = c.slideIndex === c.slides.length - 1;
+      ra.onclick = e => { e.stopPropagation(); c.slideIndex = Math.min(c.slides.length - 1, c.slideIndex + 1); c.src = c.slides[c.slideIndex]; render(); };
+      div.appendChild(ra);
+      const dots = document.createElement('div'); dots.className = 'carousel-dots';
+      c.slides.forEach((_, di) => { const dot = document.createElement('div'); dot.className = 'dot' + (di === c.slideIndex ? ' active' : ''); dots.appendChild(dot); });
+      div.appendChild(dots);
+    }
+    const overlay = document.createElement('div'); overlay.className = 'cell-overlay';
+    const delBtn = document.createElement('button'); delBtn.className = 'cell-btn';
+    delBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`;
+    delBtn.onclick = e => { e.stopPropagation(); const gi = allCells.indexOf(c); if (gi > -1) { allCells.splice(gi, 1); triggerSave(); render(); } };
+    overlay.appendChild(delBtn); div.appendChild(overlay);
+    div.addEventListener('dragstart', e => { dragFrom = i; setTimeout(() => div.classList.add('dragging'), 0); });
+    div.addEventListener('dragend', () => { div.classList.remove('dragging'); document.querySelectorAll('.cell').forEach(el => el.classList.remove('drag-over')); });
+    div.addEventListener('dragover', e => { e.preventDefault(); document.querySelectorAll('.cell').forEach(el => el.classList.remove('drag-over')); div.classList.add('drag-over'); });
+    div.addEventListener('dragleave', () => div.classList.remove('drag-over'));
+    div.addEventListener('drop', e => {
+      e.preventDefault(); div.classList.remove('drag-over');
+      if (dragFrom === null || dragFrom === i) return;
+      const fromCell = visible[dragFrom]; const toCell = visible[i];
+      const fi = allCells.indexOf(fromCell); const ti = allCells.indexOf(toCell);
+      if (fi > -1 && ti > -1) { [allCells[fi], allCells[ti]] = [allCells[ti], allCells[fi]]; triggerSave(); render(); }
+      dragFrom = null;
+    });
+    grid.appendChild(div);
+  });
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast'); t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+function copyEmbedUrl() {
+  const input = document.getElementById('embedUrl');
+  input.select();
+  document.execCommand('copy');
+  showToast('Embed URL copied!');
+}
+
+init();
+</script>
+</body>
+</html>
