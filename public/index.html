@@ -148,28 +148,45 @@ let saveTimer = null;
 
 // ── Config stored in URL — no server storage needed ──
 function saveConfigToUrl(cfg) {
-  const url = new URL(window.location.href);
-  url.searchParams.set('token', btoa(cfg.token || ''));
-  url.searchParams.set('db', cfg.dbId || '');
-  url.searchParams.set('img', cfg.imgProp || 'Cover');
-  url.searchParams.set('date', cfg.dateProp || 'Date');
-  url.searchParams.set('fmt', cfg.formatProp || 'Format');
-  url.searchParams.set('show', cfg.showProp || 'Show in grid');
-  window.history.replaceState({}, '', url.toString());
-  // Show the generated embed URL to the user
-  showEmbedUrl(url.toString());
+  // Use simple hex encoding to avoid any special characters that Notion might strip
+  const encoded = {
+    token: encodeHex(cfg.token || ''),
+    db: cfg.dbId || '',
+    img: cfg.imgProp || 'Cover',
+    date: cfg.dateProp || 'Date',
+    fmt: cfg.formatProp || 'Format',
+    show: encodeHex(cfg.showProp || 'Show in grid')
+  };
+  const base = window.location.origin + window.location.pathname;
+  const params = new URLSearchParams(encoded);
+  const fullUrl = base + '?' + params.toString();
+  window.history.replaceState({}, '', fullUrl);
+  showEmbedUrl(fullUrl);
+}
+
+function encodeHex(str) {
+  return Array.from(new TextEncoder().encode(str))
+    .map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+function decodeHex(hex) {
+  if (!hex) return '';
+  try {
+    const bytes = hex.match(/.{1,2}/g).map(b => parseInt(b, 16));
+    return new TextDecoder().decode(new Uint8Array(bytes));
+  } catch(e) { return ''; }
 }
 
 function loadConfigFromUrl() {
   const params = new URLSearchParams(window.location.search);
   if (!params.get('db')) return null;
   return {
-    token: atob(params.get('token') || ''),
+    token: decodeHex(params.get('token') || ''),
     dbId: params.get('db') || '',
     imgProp: params.get('img') || 'Cover',
     dateProp: params.get('date') || 'Date',
     formatProp: params.get('fmt') || 'Format',
-    showProp: params.get('show') || 'Show in grid',
+    showProp: decodeHex(params.get('show') || ''),
   };
 }
 
